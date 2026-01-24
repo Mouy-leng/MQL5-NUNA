@@ -1,0 +1,10 @@
+# MQL5 Git Ignore
+*.ex5
+*.ex4
+Logs/
+Tester/
+.snapshots/
+.venv/
+__pycache__/
+*.log
+*.tmp
