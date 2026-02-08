@@ -1,0 +1,47 @@
+name: MQL5 Compilation and Sync
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Compile MQL5
+        uses: fx-git/mql-compile-action@v1
+        with:
+          include: '.'
+          init-platform: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiled-eas
+          path: "**/*.ex5"
+
+  sync-forge:
+    needs: compile
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push to ForgeMQL5
+        env:
+          FORGE_TOKEN: ${{ secrets.FORGE_TOKEN }}
+          FORGE_USER: "LengKundee"
+          FORGE_REPO: "forge.mql5.io/LengKundee/UA6-9V_VL6-N9.git"
+        run: |
+          echo "Syncing..."
+          git remote add forge https://"$FORGE_USER":"$FORGE_TOKEN"@"$FORGE_REPO" || true
+          git push forge HEAD:master --force
