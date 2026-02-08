@@ -18,6 +18,7 @@ jobs:
         uses: EA31337/mql-compile-action@master
         with:
           include: '.'
+          init-platform: true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
