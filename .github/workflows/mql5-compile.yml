@@ -1,0 +1,73 @@
+name: MQL5 Compilation and Sync
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MetaTrader 5
+        run: choco install metatrader5 -y
+
+      - name: Locate MetaEditor
+        id: locate
+        run: |
+          $paths = @("C:\Program Files\MetaTrader 5", "C:\Program Files (x86)\MetaTrader 5")
+          foreach ($p in $paths) {
+            if (Test-Path "$p\metaeditor64.exe") {
+              Write-Host "FOUND: $p"
+              Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$p"
+              return
+            }
+          }
+          Write-Host "Not found in common paths, searching..."
+          $file = Get-ChildItem -Path "C:\" -Filter metaeditor64.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($file) {
+             Write-Host "FOUND: $($file.DirectoryName)"
+             Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$($file.DirectoryName)"
+          } else {
+             Write-Host "NOT FOUND"
+          }
+        shell: powershell
+
+      - name: Compile MQL5
+        uses: fx31337/mql-compile-action@master
+        with:
+          include: '.'
+          mt-path: ${{ steps.locate.outputs.path || '.' }}
+          init-platform: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-eas
+          path: "**/*.ex5"
+
+  sync-forge:
+    needs: compile
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to ForgeMQL5
+        env:
+          FORGE_TOKEN: ${{ secrets.FORGE_TOKEN }}
+          FORGE_USER: "LengKundee"
+          FORGE_REPO: "forge.mql5.io/LengKundee/UA6-9V_VL6-N9.git"
+        run: |
+          echo "Syncing..."
+          git remote add forge https://"$FORGE_USER":"$FORGE_TOKEN"@"$FORGE_REPO" || true
+          git push forge HEAD:master --force
