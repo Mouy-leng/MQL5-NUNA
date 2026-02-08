@@ -9,16 +9,42 @@ on:
 
 jobs:
   compile:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install MetaTrader 5
+        run: choco install metatrader5 -y
+
+      - name: Locate MetaEditor
+        id: locate
+        run: |
+          $paths = @("C:\Program Files\MetaTrader 5", "C:\Program Files (x86)\MetaTrader 5")
+          foreach ($p in $paths) {
+            if (Test-Path "$p\metaeditor64.exe") {
+              Write-Host "FOUND: $p"
+              Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$p"
+              return
+            }
+          }
+          Write-Host "Not found in common paths, searching..."
+          $file = Get-ChildItem -Path "C:\" -Filter metaeditor64.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($file) {
+             Write-Host "FOUND: $($file.DirectoryName)"
+             Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$($file.DirectoryName)"
+          } else {
+             Write-Host "NOT FOUND"
+          }
+        shell: powershell
+
       - name: Compile MQL5
-        uses: EA31337/mql-compile-action@master
+        uses: fx31337/mql-compile-action@master
         with:
           include: '.'
+          mt-path: ${{ steps.locate.outputs.path || '.' }}
           init-platform: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
