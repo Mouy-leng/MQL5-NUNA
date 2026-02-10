@@ -1,5 +1,10 @@
 # 🚀 MQL5 Algo Trading Framework - A6-9V / NuNa / ZOLO
 
+## 📓 Knowledge Base
+- **NotebookLM**: [Access here](https://notebooklm.google.com/notebook/e8f4c29d-9aec-4d5f-8f51-2ca168687616)
+- **Note**: This notebook is available for reading and writing. AI agents must read it before starting work.
+
+
 Welcome to the professional **MQL5 Algorithmic Trading Repository**. This repository is optimized for automated trading on **MetaTrader 5 (MT5)** with integrated **AI signal processing** and **Cloud CI/CD**.
 
 ---
